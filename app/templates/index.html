@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Digital Addiction Intelligence</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    font-family: 'Segoe UI';
+}
+
+.container-box {
+    max-width: 900px;
+    margin: auto;
+    margin-top: 40px;
+    background: rgba(255,255,255,0.08);
+    padding: 25px;
+    border-radius: 20px;
+    backdrop-filter: blur(15px);
+}
+
+.step { display:none; }
+.step.active { display:block; }
+
+label { margin-top:10px; }
+
+.result-box {
+    margin-top:20px;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.low { background:#28a745; }
+.moderate { background:#ffc107; color:black; }
+.high { background:#dc3545; }
+
+canvas {
+    margin-top:20px;
+    background:white;
+    border-radius:10px;
+}
+
+.insight-box {
+    margin-top:20px;
+    background:rgba(255,255,255,0.1);
+    padding:15px;
+    border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-box">
+<h2 class="text-center">Digital Addiction Intelligence</h2>
+
+{% if not prediction_text %}
+
+<form action="/predict" method="post">
+
+<div class="step active">
+<h4>Basic</h4>
+
+<label>Age Group</label>
+<select name="age_group" required class="form-control">
+<option value="">Select</option>
+<option>15-24</option>
+<option>25-34</option>
+<option>35-44</option>
+<option>45+</option>
+</select>
+
+<button type="button" onclick="nextStep()" class="btn btn-light w-100 mt-2">Next</button>
+</div>
+
+<div class="step">
+<h4>Usage</h4>
+
+<input type="number" name="screen_time" placeholder="Screen Time" required class="form-control mb-2">
+<input type="number" name="social_media" placeholder="Social Media" required class="form-control mb-2">
+<input type="number" name="gaming" placeholder="Gaming" required class="form-control mb-2">
+<input type="number" name="streaming" placeholder="Streaming" required class="form-control mb-2">
+<input type="number" name="phone_checks" placeholder="Phone Checks" required class="form-control mb-2">
+
+<button type="button" onclick="prevStep()" class="btn btn-light w-100">Back</button>
+<button type="button" onclick="nextStep()" class="btn btn-light w-100">Next</button>
+</div>
+
+<div class="step">
+<h4>Behavior</h4>
+
+<input type="number" name="sleep_duration" placeholder="Sleep Hours" required class="form-control mb-2">
+
+<select name="sleep_delay" required class="form-control mb-2">
+<option value="">Sleep Delay?</option>
+<option>yes</option>
+<option>no</option>
+</select>
+
+<input type="number" name="work_hours" placeholder="Work Hours" required class="form-control mb-2">
+
+<select name="irritation" required class="form-control mb-2">
+<option value="">Irritation?</option>
+<option>yes</option>
+<option>no</option>
+</select>
+
+<select name="mood_swings" required class="form-control mb-2">
+<option value="">Mood Swings</option>
+<option>rarely</option>
+<option>sometimes</option>
+<option>often</option>
+</select>
+
+<input type="number" name="social_time" placeholder="Social Time" required class="form-control mb-2">
+
+<button type="button" onclick="prevStep()" class="btn btn-light w-100">Back</button>
+<button type="submit" class="btn btn-success w-100">Analyze</button>
+</div>
+
+</form>
+
+{% endif %}
+
+{% if prediction_text %}
+{% set risk = prediction_text.split(': ')[1].lower() %}
+
+<div class="result-box {{ risk }}">
+{{ prediction_text }}
+</div>
+
+<canvas id="chart"></canvas>
+
+<div class="insight-box">
+<h4>AI Suggestions</h4>
+<ul>
+{% for tip in suggestions %}
+<li>{{ tip }}</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="text-center mt-3">
+<button onclick="exitApp()" class="btn btn-danger">Exit</button>
+</div>
+
+{% endif %}
+
+</div>
+
+<script>
+let currentStep = 0;
+const steps = document.querySelectorAll(".step");
+
+function showStep(i){
+    steps.forEach((s,index)=>s.classList.toggle("active", index===i));
+}
+
+function validateStep(step){
+    let inputs = step.querySelectorAll("input,select");
+    for(let i of inputs){
+        if(i.value===""){
+            i.style.border="2px solid red";
+            return false;
+        }
+        i.style.border="";
+    }
+    return true;
+}
+
+function nextStep(){
+    if(validateStep(steps[currentStep])){
+        currentStep++;
+        showStep(currentStep);
+    }
+}
+
+function prevStep(){
+    currentStep--;
+    showStep(currentStep);
+}
+
+{% if prediction_text %}
+
+let score = 0;
+{% if "Low" in prediction_text %} score=30;
+{% elif "Moderate" in prediction_text %} score=60;
+{% else %} score=90;
+{% endif %}
+
+new Chart(document.getElementById('chart'), {
+    type:'doughnut',
+    data:{
+        labels:['Risk','Safe'],
+        datasets:[{data:[score,100-score]}]
+    }
+});
+
+{% endif %}
+
+function exitApp(){
+    document.body.innerHTML="<h2 style='text-align:center;margin-top:100px;'>Session Ended</h2>";
+}
+</script>
+
+</body>
+</html>
